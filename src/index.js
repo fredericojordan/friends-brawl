@@ -51,7 +51,8 @@ function removePlayer(id) {
 }
 
 function movePlayer(id, x, y) {
-    var player = playerMap[id];
+  var player = playerMap[id];
+  if (player) {
     var dx = x - player.x;
     if (dx > 0) {
       player.anims.play("right", true);
@@ -69,6 +70,7 @@ function movePlayer(id, x, y) {
     }
     player.x = x;
     player.y = y;
+  }
 }
 
 function preload ()
