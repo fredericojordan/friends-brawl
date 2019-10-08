@@ -46,8 +46,10 @@ client.socket.on("move", function(data) {
 });
 
 function removePlayer(id) {
+  if (playerMap[id]) {
     playerMap[id].destroy();
     delete playerMap[id];
+  }
 }
 
 function movePlayer(id, x, y) {
