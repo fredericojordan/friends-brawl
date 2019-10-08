@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import desertTiles from "./assets/tilemaps/tiles/tmw_desert_spacing.png";
 import arenaMap from "./assets/tilemaps/maps/map.json";
 import dude from "./assets/dude.png";
+import bomb from "./assets/bomb.png";
 
 var config = {
   type: Phaser.AUTO,
@@ -25,6 +26,8 @@ var rt;
 var layer;
 var player;
 var cursors;
+var bombs;
+var gameOver = false;
 
 var game = new Phaser.Game(config);
 
@@ -32,6 +35,7 @@ function preload ()
 {
   this.load.image("tiles", desertTiles);
   this.load.tilemapTiledJSON("map", arenaMap);
+  this.load.image("bomb", bomb);
   this.load.spritesheet("dude", dude, {
     frameWidth: 32,
     frameHeight: 48,
@@ -65,10 +69,26 @@ function create ()
     frameRate: 10,
     repeat: -1,
   });
+
+  cursors = this.input.keyboard.createCursorKeys();
+
+  bombs = this.physics.add.group();
+  for (let i = 0; i <= 10; i++) {
+    let x = Phaser.Math.Between(0, 800);
+    var bomb = bombs.create(x, 16, "bomb");
+    bomb.setBounce(1);
+    bomb.setCollideWorldBounds(true);
+    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    bomb.allowGravity = false;
+  }
+  this.physics.add.collider(player, bombs, hitBomb, null, this);
 }
 
-function update() {
-  cursors = this.input.keyboard.createCursorKeys();
+function update()
+{
+  if (gameOver) {
+    return;
+  }
 
   player.setVelocityX(0);
   player.setVelocityY(0);
@@ -91,4 +111,11 @@ function update() {
 
   rt.clear();
   rt.draw(layer);
+}
+
+function hitBomb(player, _bomb) {
+  this.physics.pause();
+  player.setTint(0xff0000);
+  player.anims.play('turn');
+  gameOver = true;
 }
