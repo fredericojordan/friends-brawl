@@ -15,37 +15,41 @@ server.listen(8081, function() {
     console.log("Listening on " + server.address().port);
 });
 
-server.lastPlayerID = 0;
+server.nextPlayerID = 0;
 
 io.on("connection", function(socket) {
+    console.log("connected");
     socket.on("newplayer", function() {
+        console.log("player " + server.nextPlayerID.toString() + " has entered");
         socket.player = {
-            id: server.lastPlayderID++,
+            id: server.nextPlayerID++,
             x: randomInt(20,780),
             y: randomInt(20,588)
         };
         socket.emit("allplayers", getAllPlayers());
         socket.broadcast.emit("newplayer", socket.player);
 
-        socket.on("click", function(data) {
-            console.log("click to " + data.x + ", " + data.y);
-            socket.player.x = data.x;
-            socket.player.y = data.y;
-            io.emit("move",socket.player);
+        socket.on("direct", function(data) {
+            let speed = 1;
+            socket.player.x += speed*data.direction.x;
+            socket.player.y += speed*data.direction.y;
+            io.emit("move", socket.player);
         });
 
-        socket.on("disconnect",function(){
-            io.emit("remove",socket.player.id);
+        socket.on("disconnect", function(){
+            console.log("player " + socket.player.id + " has left");
+            io.emit("remove", socket.player.id);
         });
     });
 });
 
-function getAllPlayers(){
+function getAllPlayers() {
     var players = [];
     Object.keys(io.sockets.connected).forEach(function(socketID){
         var player = io.sockets.connected[socketID].player;
         if(player) players.push(player);
     });
+    console.log(players);
     return players;
 }
 

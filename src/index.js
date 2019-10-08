@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import io from "socket.io-client";
 
 var config = {
   type: Phaser.AUTO,
@@ -23,11 +24,10 @@ var layer;
 var player;
 var cursors;
 var keys;
-var bombs;
+// var bombs;
 var gameOver = false;
-var playerMap;
+var playerMap = {};
 var client = {};
-var add = {add:false, id:0, x:0, y:0};
 
 var game = new Phaser.Game(config);
 
@@ -35,33 +35,15 @@ client.socket = io.connect();
 client.askNewPlayer = function() {
     client.socket.emit("newplayer");
 };
-client.sendClick = function(x, y) {
-  client.socket.emit("click", {x:x, y:y});
+client.direct = function(direction) {
+  client.socket.emit("direct", {direction: direction});
 };
-client.socket.on("newplayer", function(data) {
-    addNewPlayer(data.id,data.x,data.y);
-});
-client.socket.on("allplayers", function(data) {
-    console.log(data);
-    for (var i = 0; i < data.length; i++) {
-        addNewPlayer(data[i].id, data[i].x, data[i].y);
-    }
-});
 client.socket.on("remove", function(id) {
     removePlayer(id);
 });
 client.socket.on("move", function(data) {
     movePlayer(data.id, data.x, data.y);
 });
-
-function getCoordinates(layer, pointer) {
-    client.sendClick(pointer.worldX, pointer.worldY);
-}
-
-function addNewPlayer(id, x, y) {
-  add = {add:true, id:id, x:x, y:y};
-    // playerMap[id] = this.physics.add.sprite(x, y, "dude");
-}
 
 function removePlayer(id) {
     playerMap[id].destroy();
@@ -70,11 +52,16 @@ function removePlayer(id) {
 
 function movePlayer(id, x, y) {
     var player = playerMap[id];
-    var distance = Phaser.Math.distance(player.x,player.y,x,y);
-    var duration = distance*10;
-    var tween = this.add.tween(player);
-    tween.to({x:x, y:y}, duration);
-    tween.start();
+    var dx = x - player.x;
+    if (dx > 0) {
+      player.anims.play("right", true);
+    } else if (dx < 0) {
+      player.anims.play("left", true);
+    } else {
+      player.anims.play("turn", true);
+    }
+    player.x = x;
+    player.y = y;
 }
 
 function preload ()
@@ -90,18 +77,24 @@ function preload ()
 
 function create ()
 {
-  playerMap = {};
+  var self = this;
   client.askNewPlayer();
 
   let map = this.make.tilemap({ key: "map" });
   var tiles = map.addTilesetImage("Desert", "tiles");
   layer = map.createDynamicLayer("Ground", tiles, 0, 0).setVisible(false);
-  layer.inputEnabled = true; // Allows clicking on the map
-  // layer.events.onInputUp.add(getCoordinates, this);
   rt = this.add.renderTexture(0, 0, 800, 800);
 
-  player = this.physics.add.sprite(100, 450, "dude");
-  player.setCollideWorldBounds(true);
+  client.socket.on("newplayer", function(data) {
+    playerMap[data.id] = self.physics.add.sprite(data.x, data.y, "dude");
+  });
+  client.socket.on("allplayers", function(data) {
+    console.log(data);
+    for (var i = 0; i < data.length; i++) {
+        playerMap[data[i].id] = self.physics.add.sprite(data[i].x, data[i].y, "dude");
+    }
+  });
+
   this.anims.create({
     key: "left",
     frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
@@ -123,17 +116,17 @@ function create ()
   cursors = this.input.keyboard.createCursorKeys();
   keys = this.input.keyboard.addKeys("W,S,A,D");
 
-  bombs = this.physics.add.group();
-  for (let i = 0; i <= 10; i++) {
-    let vx = Phaser.Math.Between(0, 800);
-    let vy = Phaser.Math.Between(10, 30);
-    var bomb = bombs.create(vx, vy, "bomb");
-    bomb.setBounce(1);
-    bomb.setCollideWorldBounds(true);
-    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-    bomb.allowGravity = false;
-  }
-  this.physics.add.collider(player, bombs, hitBomb, null, this);
+  // bombs = this.physics.add.group();
+  // for (let i = 0; i < 0; i++) {
+  //   let vx = Phaser.Math.Between(0, 800);
+  //   let vy = Phaser.Math.Between(10, 30);
+  //   var bomb = bombs.create(vx, vy, "bomb");
+  //   bomb.setBounce(1);
+  //   bomb.setCollideWorldBounds(true);
+  //   bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+  //   bomb.allowGravity = false;
+  // }
+  // this.physics.add.collider(player, bombs, hitBomb, null, this);
 }
 
 function update()
@@ -142,29 +135,18 @@ function update()
     return;
   }
 
-  if (add.add) {
-    playerMap[add.id] = this.physics.add.sprite(add.x, add.y, "dude");
-    add.add = false;
-  }
-
-  player.setVelocityX(0);
-  player.setVelocityY(0);
-
+  var direction = {x: 0, y: 0};
   if (cursors.left.isDown || keys.A.isDown) {
-    player.setVelocityX(-160);
-    player.anims.play("left", true);
+    direction.x = -1;
   } else if (cursors.right.isDown || keys.D.isDown) {
-    player.setVelocityX(160);
-    player.anims.play("right", true);
-  } else {
-    player.anims.play("turn");
+    direction.x = 1;
   }
-
   if (cursors.up.isDown || keys.W.isDown) {
-    player.setVelocityY(-160);
+    direction.y = -1;
   } else if (cursors.down.isDown || keys.S.isDown) {
-    player.setVelocityY(160);
+    direction.y = 1;
   }
+  client.direct(direction);
 
   rt.clear();
   rt.draw(layer);
@@ -173,6 +155,6 @@ function update()
 function hitBomb(player, _bomb) {
   this.physics.pause();
   player.setTint(0xff0000);
-  player.anims.play('turn');
+  player.anims.play("turn");
   gameOver = true;
 }
