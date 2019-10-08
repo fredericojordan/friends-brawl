@@ -26,6 +26,7 @@ var rt;
 var layer;
 var player;
 var cursors;
+var keys;
 var bombs;
 var gameOver = false;
 
@@ -71,6 +72,7 @@ function create ()
   });
 
   cursors = this.input.keyboard.createCursorKeys();
+  keys = this.input.keyboard.addKeys("W,S,A,D");
 
   bombs = this.physics.add.group();
   for (let i = 0; i <= 10; i++) {
@@ -93,19 +95,19 @@ function update()
   player.setVelocityX(0);
   player.setVelocityY(0);
 
-  if (cursors.left.isDown) {
+  if (cursors.left.isDown || keys.A.isDown) {
     player.setVelocityX(-160);
     player.anims.play("left", true);
-  } else if (cursors.right.isDown) {
+  } else if (cursors.right.isDown || keys.D.isDown) {
     player.setVelocityX(160);
     player.anims.play("right", true);
   } else {
     player.anims.play("turn");
   }
 
-  if (cursors.up.isDown) {
+  if (cursors.up.isDown || keys.W.isDown) {
     player.setVelocityY(-160);
-  } else if (cursors.down.isDown) {
+  } else if (cursors.down.isDown || keys.S.isDown) {
     player.setVelocityY(160);
   }
 
