@@ -58,7 +58,14 @@ function movePlayer(id, x, y) {
     } else if (dx < 0) {
       player.anims.play("left", true);
     } else {
-      player.anims.play("turn", true);
+      var dy = y - player.y;
+      if (dy > 0) {
+        player.anims.play("right", true);
+      } else if (dy < 0) {
+        player.anims.play("left", true);
+      } else {
+        player.anims.play("turn", true);
+      }
     }
     player.x = x;
     player.y = y;
