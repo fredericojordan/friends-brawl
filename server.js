@@ -37,6 +37,11 @@ io.on("connection", function(socket) {
             io.emit("bombs", bombs);
         });
 
+        socket.on("imdead", function() {
+            console.log("player " + socket.player.id + " has died");
+            io.emit("died", socket.player.id);
+        });
+
         socket.on("direct", function(data) {
             let speed = 1;
             socket.player.x += speed*data.direction.x;
