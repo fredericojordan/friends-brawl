@@ -21,25 +21,38 @@ var config = {
 
 var rt;
 var layer;
-var player;
 var cursors;
 var keys;
-// var bombs;
+var bombs;
 var gameOver = false;
+var players;
 var playerMap = {};
 var client = {};
+var my_id;
 
 var game = new Phaser.Game(config);
 
 client.socket = io.connect();
+
 client.askNewPlayer = function() {
-    client.socket.emit("newplayer");
+  my_id = createUUID();
+  client.socket.emit("newplayer", {id: my_id});
 };
 client.direct = function(direction) {
   client.socket.emit("direct", {direction: direction});
 };
+client.dropBomb = function() {
+  client.socket.emit("dropbomb");
+};
+client.imDead = function() {
+  client.socket.emit("imdead");
+};
+
 client.socket.on("remove", function(id) {
     removePlayer(id);
+});
+client.socket.on("died", function(id) {
+    killPlayer(id);
 });
 client.socket.on("move", function(data) {
     movePlayer(data.id, data.x, data.y);
@@ -49,6 +62,13 @@ function removePlayer(id) {
   if (playerMap[id]) {
     playerMap[id].destroy();
     delete playerMap[id];
+  }
+}
+
+function killPlayer(id) {
+  if (playerMap[id]) {
+    playerMap[id].anims.play("turn", true);
+    playerMap[id].setTint(0xff0000);
   }
 }
 
@@ -97,13 +117,24 @@ function create ()
   rt = this.add.renderTexture(0, 0, 800, 800);
 
   client.socket.on("newplayer", function(data) {
-    playerMap[data.id] = self.physics.add.sprite(data.x, data.y, "dude");
+    playerMap[data.id] = players.create(data.x, data.y, "dude");
+    playerMap[data.id].id = data.id;
+    players.setDepth(1);
   });
   client.socket.on("allplayers", function(data) {
-    console.log(data);
     for (var i = 0; i < data.length; i++) {
-        playerMap[data[i].id] = self.physics.add.sprite(data[i].x, data[i].y, "dude");
+        playerMap[data[i].id] = players.create(data[i].x, data[i].y, "dude");
+        playerMap[data[i].id].id = data[i].id;
     }
+    players.setDepth(1);
+  });
+  client.socket.on("bombs", function(data) {
+    bombs.clear(true, true);
+    for (var i = 0; i < data.length; i++) {
+        var bomb = bombs.create(data[i].x, data[i].y, "bomb");
+        bomb.parent_id = data[i].parent_id;
+    }
+    self.physics.add.collider(players, bombs, hitBomb, null, this);
   });
 
   this.anims.create({
@@ -125,19 +156,12 @@ function create ()
   });
 
   cursors = this.input.keyboard.createCursorKeys();
-  keys = this.input.keyboard.addKeys("W,S,A,D");
+  keys = this.input.keyboard.addKeys("W,S,A,D,space");
 
-  // bombs = this.physics.add.group();
-  // for (let i = 0; i < 0; i++) {
-  //   let vx = Phaser.Math.Between(0, 800);
-  //   let vy = Phaser.Math.Between(10, 30);
-  //   var bomb = bombs.create(vx, vy, "bomb");
-  //   bomb.setBounce(1);
-  //   bomb.setCollideWorldBounds(true);
-  //   bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-  //   bomb.allowGravity = false;
-  // }
-  // this.physics.add.collider(player, bombs, hitBomb, null, this);
+  bombs = this.physics.add.group();
+  players = this.physics.add.group();
+
+  keys.space.addListener("up", function() {client.dropBomb();} );
 }
 
 function update()
@@ -163,9 +187,27 @@ function update()
   rt.draw(layer);
 }
 
-function hitBomb(player, _bomb) {
-  this.physics.pause();
-  player.setTint(0xff0000);
-  player.anims.play("turn");
-  gameOver = true;
+function hitBomb(player, bomb) {
+  if (player.id === my_id && bomb.parent_id !== my_id && !gameOver) {
+    if (my_id && playerMap[my_id]) {
+      playerMap[my_id].anims.play("turn", true);
+      playerMap[my_id].setTint(0xff0000);
+    }
+    gameOver = true;
+    client.direct({x: 0, y: 0});
+    client.imDead();
+  }
+}
+
+function createUUID(){
+
+    let dt = new Date().getTime();
+
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+
+    return uuid;
 }
