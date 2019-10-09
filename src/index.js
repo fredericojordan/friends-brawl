@@ -24,20 +24,27 @@ var layer;
 var player;
 var cursors;
 var keys;
-// var bombs;
+var bombs;
 var gameOver = false;
+var players;
 var playerMap = {};
 var client = {};
+var my_id;
 
 var game = new Phaser.Game(config);
 
 client.socket = io.connect();
+
 client.askNewPlayer = function() {
     client.socket.emit("newplayer");
 };
 client.direct = function(direction) {
   client.socket.emit("direct", {direction: direction});
 };
+client.dropBomb = function() {
+  client.socket.emit("dropbomb");
+};
+
 client.socket.on("remove", function(id) {
     removePlayer(id);
 });
@@ -97,12 +104,20 @@ function create ()
   rt = this.add.renderTexture(0, 0, 800, 800);
 
   client.socket.on("newplayer", function(data) {
-    playerMap[data.id] = self.physics.add.sprite(data.x, data.y, "dude");
+    my_id = data.id;
+    playerMap[data.id] = players.create(data.x, data.y, "dude");
+    players.setDepth(1);
   });
   client.socket.on("allplayers", function(data) {
-    console.log(data);
     for (var i = 0; i < data.length; i++) {
-        playerMap[data[i].id] = self.physics.add.sprite(data[i].x, data[i].y, "dude");
+        playerMap[data[i].id] = players.create(data[i].x, data[i].y, "dude");
+    }
+    players.setDepth(1);
+  });
+  client.socket.on("bombs", function(data) {
+    bombs.clear(true, true);
+    for (var i = 0; i < data.length; i++) {
+        bombs.create(data[i].x, data[i].y, "bomb");
     }
   });
 
@@ -125,19 +140,13 @@ function create ()
   });
 
   cursors = this.input.keyboard.createCursorKeys();
-  keys = this.input.keyboard.addKeys("W,S,A,D");
+  keys = this.input.keyboard.addKeys("W,S,A,D,space");
 
-  // bombs = this.physics.add.group();
-  // for (let i = 0; i < 0; i++) {
-  //   let vx = Phaser.Math.Between(0, 800);
-  //   let vy = Phaser.Math.Between(10, 30);
-  //   var bomb = bombs.create(vx, vy, "bomb");
-  //   bomb.setBounce(1);
-  //   bomb.setCollideWorldBounds(true);
-  //   bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-  //   bomb.allowGravity = false;
-  // }
+  bombs = this.physics.add.group();
+  players = this.physics.add.group();
   // this.physics.add.collider(player, bombs, hitBomb, null, this);
+
+  keys.space.addListener("up", function() {client.dropBomb();} );
 }
 
 function update()
@@ -165,7 +174,9 @@ function update()
 
 function hitBomb(player, _bomb) {
   this.physics.pause();
-  player.setTint(0xff0000);
-  player.anims.play("turn");
   gameOver = true;
+
+  if (my_id && playerMap[my_id]) {
+    playerMap[my_id].setTint(0xff0000);
+  }
 }

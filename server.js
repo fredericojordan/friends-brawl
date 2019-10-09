@@ -16,6 +16,8 @@ server.listen(process.env.PORT || 8081, function() {
 });
 
 server.nextPlayerID = 0;
+var bombs = [];
+const BOMB_TIMEOUT = 3000;
 
 io.on("connection", function(socket) {
     console.log("connected");
@@ -26,8 +28,15 @@ io.on("connection", function(socket) {
             x: randomInt(20,780),
             y: randomInt(20,588)
         };
+        socket.emit("bombs", bombs);
         socket.emit("allplayers", getAllPlayers());
         socket.broadcast.emit("newplayer", socket.player);
+
+        socket.on("dropbomb", function(data) {
+            bombs.push({x: socket.player.x, y: socket.player.y+20});
+            setTimeout(function(){ bombs.shift(); io.emit("bombs", bombs); }, BOMB_TIMEOUT);
+            io.emit("bombs", bombs);
+        });
 
         socket.on("direct", function(data) {
             let speed = 1;
