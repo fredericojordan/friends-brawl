@@ -6,7 +6,7 @@ A brawl-type multiplayer game. Currently in development and made available at
 Frontend uses [Phaser](https://phaser.io/phaser3) gaming framework and multiplayer made possible via
 [Socket.IO](https://socket.io/).
 
-ES6 support via [Babel 7](https://babeljs.io/) and bundle created using [Webpack](https://webpack.js.org/).
+ES6 support via [Babel](https://babeljs.io/) and bundle created using [Webpack](https://webpack.js.org/).
 
 ## Build
 
