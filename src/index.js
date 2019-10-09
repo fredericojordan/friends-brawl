@@ -44,9 +44,15 @@ client.direct = function(direction) {
 client.dropBomb = function() {
   client.socket.emit("dropbomb");
 };
+client.imDead = function() {
+  client.socket.emit("imdead");
+};
 
 client.socket.on("remove", function(id) {
     removePlayer(id);
+});
+client.socket.on("died", function(id) {
+    killPlayer(id);
 });
 client.socket.on("move", function(data) {
     movePlayer(data.id, data.x, data.y);
@@ -56,6 +62,13 @@ function removePlayer(id) {
   if (playerMap[id]) {
     playerMap[id].destroy();
     delete playerMap[id];
+  }
+}
+
+function killPlayer(id) {
+  if (playerMap[id]) {
+    playerMap[id].anims.play("turn", true);
+    playerMap[id].setTint(0xff0000);
   }
 }
 
@@ -105,11 +118,13 @@ function create ()
 
   client.socket.on("newplayer", function(data) {
     playerMap[data.id] = players.create(data.x, data.y, "dude");
+    playerMap[data.id].id = data.id;
     players.setDepth(1);
   });
   client.socket.on("allplayers", function(data) {
     for (var i = 0; i < data.length; i++) {
         playerMap[data[i].id] = players.create(data[i].x, data[i].y, "dude");
+        playerMap[data[i].id].id = data[i].id;
     }
     players.setDepth(1);
   });
@@ -173,12 +188,14 @@ function update()
 }
 
 function hitBomb(player, bomb) {
-  if (bomb.parent_id !== my_id) {
+  if (player.id === my_id && bomb.parent_id !== my_id && !gameOver) {
     if (my_id && playerMap[my_id]) {
       playerMap[my_id].anims.play("turn", true);
       playerMap[my_id].setTint(0xff0000);
     }
     gameOver = true;
+    client.direct({x: 0, y: 0});
+    client.imDead();
   }
 }
 
