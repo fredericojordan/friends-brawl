@@ -1,0 +1,38 @@
+version: 2.1
+
+aliases:
+  - &restore-cache
+    restore_cache:
+      key: deps1-{{ checksum "package.json" }}
+  - &install-dependencies
+    run:
+      name: Install dependencies
+      command: npm install
+  - &save-cache
+    save_cache:
+      key: deps1-{{ checksum "package.json" }}
+  - &create-production-bundle
+    run:
+      name: Generate production bundle
+      command: npm run-script build
+
+defaults: &defaults
+  docker:
+    - image: circleci/node:latest
+
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - <<: *restore-cache
+      - <<: *install-dependencies
+      - <<: *save-cache
+      - <<: *create-production-bundle
+
+workflows:
+  version: 2
+
+  build:
+    jobs:
+      - build
