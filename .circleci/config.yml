@@ -1,16 +1,10 @@
 version: 2.1
 
 aliases:
-  - &restore-cache
-    restore_cache:
-      key: deps1-{{ checksum "package.json" }}
   - &install-dependencies
     run:
       name: Install dependencies
       command: npm install
-  - &save-cache
-    save_cache:
-      key: deps1-{{ checksum "package.json" }}
   - &create-production-bundle
     run:
       name: Generate production bundle
@@ -25,9 +19,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - <<: *restore-cache
       - <<: *install-dependencies
-      - <<: *save-cache
       - <<: *create-production-bundle
 
 workflows:
