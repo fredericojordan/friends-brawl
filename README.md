@@ -1,5 +1,7 @@
 # Friends Brawl
 
+[![Build](https://circleci.com/gh/fredericojordan/friends-brawl.svg?style=svg)](https://circleci.com/gh/fredericojordan/friends-brawl)
+
 A brawl-type multiplayer game. Currently in development and made available at
 [friends-brawl.herokuapp.com](http://friends-brawl.herokuapp.com/).
 
