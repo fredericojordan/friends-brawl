@@ -15,16 +15,15 @@ server.listen(process.env.PORT || 8081, function() {
     console.log("Listening on " + server.address().port);
 });
 
-server.nextPlayerID = 0;
 var bombs = [];
 const BOMB_TIMEOUT = 3000;
 
 io.on("connection", function(socket) {
     console.log("connected");
-    socket.on("newplayer", function() {
-        console.log("player " + server.nextPlayerID.toString() + " has entered");
+    socket.on("newplayer", function(data) {
+        console.log("player " + data.id.toString() + " has entered");
         socket.player = {
-            id: server.nextPlayerID++,
+            id: data.id,
             x: randomInt(20,780),
             y: randomInt(20,588)
         };
@@ -33,7 +32,7 @@ io.on("connection", function(socket) {
         socket.broadcast.emit("newplayer", socket.player);
 
         socket.on("dropbomb", function(data) {
-            bombs.push({x: socket.player.x, y: socket.player.y+20});
+            bombs.push({parent_id: socket.player.id, x: socket.player.x, y: socket.player.y+20});
             setTimeout(function(){ bombs.shift(); io.emit("bombs", bombs); }, BOMB_TIMEOUT);
             io.emit("bombs", bombs);
         });

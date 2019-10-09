@@ -21,7 +21,6 @@ var config = {
 
 var rt;
 var layer;
-var player;
 var cursors;
 var keys;
 var bombs;
@@ -36,7 +35,8 @@ var game = new Phaser.Game(config);
 client.socket = io.connect();
 
 client.askNewPlayer = function() {
-    client.socket.emit("newplayer");
+  my_id = createUUID();
+  client.socket.emit("newplayer", {id: my_id});
 };
 client.direct = function(direction) {
   client.socket.emit("direct", {direction: direction});
@@ -104,7 +104,6 @@ function create ()
   rt = this.add.renderTexture(0, 0, 800, 800);
 
   client.socket.on("newplayer", function(data) {
-    my_id = data.id;
     playerMap[data.id] = players.create(data.x, data.y, "dude");
     players.setDepth(1);
   });
@@ -117,8 +116,10 @@ function create ()
   client.socket.on("bombs", function(data) {
     bombs.clear(true, true);
     for (var i = 0; i < data.length; i++) {
-        bombs.create(data[i].x, data[i].y, "bomb");
+        var bomb = bombs.create(data[i].x, data[i].y, "bomb");
+        bomb.parent_id = data[i].parent_id;
     }
+    self.physics.add.collider(players, bombs, hitBomb, null, this);
   });
 
   this.anims.create({
@@ -144,7 +145,6 @@ function create ()
 
   bombs = this.physics.add.group();
   players = this.physics.add.group();
-  // this.physics.add.collider(player, bombs, hitBomb, null, this);
 
   keys.space.addListener("up", function() {client.dropBomb();} );
 }
@@ -172,11 +172,25 @@ function update()
   rt.draw(layer);
 }
 
-function hitBomb(player, _bomb) {
-  this.physics.pause();
-  gameOver = true;
-
-  if (my_id && playerMap[my_id]) {
-    playerMap[my_id].setTint(0xff0000);
+function hitBomb(player, bomb) {
+  if (bomb.parent_id !== my_id) {
+    if (my_id && playerMap[my_id]) {
+      playerMap[my_id].anims.play("turn", true);
+      playerMap[my_id].setTint(0xff0000);
+    }
+    gameOver = true;
   }
+}
+
+function createUUID(){
+
+    let dt = new Date().getTime();
+
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+
+    return uuid;
 }
