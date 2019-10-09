@@ -166,16 +166,16 @@ function update()
   } else if (cursors.down.isDown || keys.S.isDown) {
     direction.y = 1;
   }
-  preMove(direction);
+  preMove(my_id, direction);
   client.direct(direction);
 
   rt.clear();
   rt.draw(layer);
 }
 
-function preMove(direction) {
-  if (my_id && playerMap[my_id]) {
-    var player = playerMap[my_id];
+function preMove(player_id, direction) {
+  var player = playerMap[player_id];
+  if (player) {
     var new_x = player.x + direction.x;
     var new_y = player.y + direction.y;
     movePlayer(my_id, new_x, new_y);
