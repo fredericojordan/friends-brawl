@@ -59,16 +59,14 @@ function removePlayer(id) {
   }
 }
 
-function movePlayer(id, x, y) {
+function animatePlayerSprite(id, dx, dy) {
   var player = playerMap[id];
   if (player) {
-    var dx = x - player.x;
     if (dx > 0) {
       player.anims.play("right", true);
     } else if (dx < 0) {
       player.anims.play("left", true);
     } else {
-      var dy = y - player.y;
       if (dy > 0) {
         player.anims.play("right", true);
       } else if (dy < 0) {
@@ -77,8 +75,18 @@ function movePlayer(id, x, y) {
         player.anims.play("turn", true);
       }
     }
+  }
+}
+
+function movePlayer(id, x, y) {
+  var player = playerMap[id];
+  if (player) {
     player.x = x;
     player.y = y;
+
+    if (id !== my_id) {
+      animatePlayerSprite(id, x - player.x, y - player.y);
+    }
   }
 }
 
