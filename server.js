@@ -39,9 +39,8 @@ io.on("connection", function(socket) {
         });
 
         socket.on("direct", function(data) {
-            let speed = 1;
-            socket.player.x += speed*data.direction.x;
-            socket.player.y += speed*data.direction.y;
+            socket.player.x += data.direction.x;
+            socket.player.y += data.direction.y;
             io.emit("move", socket.player);
         });
 

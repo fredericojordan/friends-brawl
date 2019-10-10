@@ -21,7 +21,6 @@ var config = {
 
 var rt;
 var layer;
-var player;
 var cursors;
 var keys;
 var bombs;
@@ -36,7 +35,7 @@ var game = new Phaser.Game(config);
 client.socket = io.connect();
 
 client.askNewPlayer = function() {
-    client.socket.emit("newplayer");
+  client.socket.emit("newplayer");
 };
 client.direct = function(direction) {
   client.socket.emit("direct", {direction: direction});
@@ -49,7 +48,10 @@ client.socket.on("remove", function(id) {
     removePlayer(id);
 });
 client.socket.on("move", function(data) {
-    movePlayer(data.id, data.x, data.y);
+  if (data.id !== my_id) {
+    animatePlayerSprite(data.id, data.x, data.y);
+  }
+  movePlayer(data.id, data.x, data.y);
 });
 
 function removePlayer(id) {
@@ -59,33 +61,32 @@ function removePlayer(id) {
   }
 }
 
-function animatePlayerSprite(id, dx, dy) {
+function animatePlayerSprite(id, x, y) {
   var player = playerMap[id];
-  if (player) {
-    if (dx > 0) {
-      player.anims.play("right", true);
-    } else if (dx < 0) {
-      player.anims.play("left", true);
-    } else if (dy > 0) {
-      player.anims.play("right", true);
-    } else if (dy < 0) {
-      player.anims.play("left", true);
-    } else {
-      player.anims.play("turn", true);
-    }
+  if (!player) { return; }
+
+  var dx = x - player.x;
+  var dy = y - player.y;
+
+  if (dx > 0) {
+    player.anims.play("right", true);
+  } else if (dx < 0) {
+    player.anims.play("left", true);
+  } else if (dy > 0) {
+    player.anims.play("right", true); // up
+  } else if (dy < 0) {
+    player.anims.play("left", true); // down
+  } else {
+    player.anims.play("turn", true);
   }
 }
 
 function movePlayer(id, x, y) {
   var player = playerMap[id];
-  if (player) {
-    player.x = x;
-    player.y = y;
+  if (!player) { return; }
 
-    if (id !== my_id) {
-      animatePlayerSprite(id, x - player.x, y - player.y);
-    }
-  }
+  player.x = x;
+  player.y = y;
 }
 
 function preload ()
@@ -110,7 +111,6 @@ function create ()
   rt = this.add.renderTexture(0, 0, 800, 800);
 
   client.socket.on("newplayer", function(data) {
-    my_id = data.id;
     playerMap[data.id] = players.create(data.x, data.y, "dude");
     players.setDepth(1);
   });
@@ -172,20 +172,18 @@ function update()
   } else if (cursors.down.isDown || keys.S.isDown) {
     direction.y = 1;
   }
-  preMove(my_id, direction);
+
+  var player = playerMap[my_id];
+  if (player) {
+    var new_x = player.x + direction.x;
+    var new_y = player.y + direction.y;
+    animatePlayerSprite(my_id, new_x, new_y);
+    movePlayer(my_id, new_x, new_y);
+  }
   client.direct(direction);
 
   rt.clear();
   rt.draw(layer);
-}
-
-function preMove(player_id, direction) {
-  var player = playerMap[player_id];
-  if (player) {
-    var new_x = player.x + direction.x;
-    var new_y = player.y + direction.y;
-    movePlayer(my_id, new_x, new_y);
-  }
 }
 
 function hitBomb(player, _bomb) {
