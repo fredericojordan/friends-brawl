@@ -66,14 +66,12 @@ function animatePlayerSprite(id, dx, dy) {
       player.anims.play("right", true);
     } else if (dx < 0) {
       player.anims.play("left", true);
+    } else if (dy > 0) {
+      player.anims.play("right", true);
+    } else if (dy < 0) {
+      player.anims.play("left", true);
     } else {
-      if (dy > 0) {
-        player.anims.play("right", true);
-      } else if (dy < 0) {
-        player.anims.play("left", true);
-      } else {
-        player.anims.play("turn", true);
-      }
+      player.anims.play("turn", true);
     }
   }
 }
