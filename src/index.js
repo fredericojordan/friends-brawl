@@ -49,15 +49,13 @@ client.imDead = function() {
 };
 
 client.socket.on("remove", function(id) {
-    removePlayer(id);
+  removePlayer(id);
 });
 client.socket.on("died", function(id) {
-    killPlayer(id);
+  killPlayer(id);
 });
 client.socket.on("move", function(data) {
-  if (data.id !== my_id) {
-    animatePlayerSprite(data.id, data.x, data.y);
-  }
+  animatePlayerSprite(data.id, data.x, data.y);
   movePlayer(data.id, data.x, data.y);
 });
 
@@ -195,7 +193,6 @@ function update()
     var new_x = player.x + direction.x;
     var new_y = player.y + direction.y;
     animatePlayerSprite(my_id, new_x, new_y);
-    movePlayer(my_id, new_x, new_y);
   }
   client.direct(direction);
 
