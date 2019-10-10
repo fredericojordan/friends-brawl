@@ -55,7 +55,10 @@ client.socket.on("died", function(id) {
     killPlayer(id);
 });
 client.socket.on("move", function(data) {
-    movePlayer(data.id, data.x, data.y);
+  if (data.id !== my_id) {
+    animatePlayerSprite(data.id, data.x, data.y);
+  }
+  movePlayer(data.id, data.x, data.y);
 });
 
 function removePlayer(id) {
@@ -72,27 +75,32 @@ function killPlayer(id) {
   }
 }
 
+function animatePlayerSprite(id, x, y) {
+  var player = playerMap[id];
+  if (!player) { return; }
+
+  var dx = x - player.x;
+  var dy = y - player.y;
+
+  if (dx > 0) {
+    player.anims.play("right", true);
+  } else if (dx < 0) {
+    player.anims.play("left", true);
+  } else if (dy > 0) {
+    player.anims.play("right", true); // up
+  } else if (dy < 0) {
+    player.anims.play("left", true); // down
+  } else {
+    player.anims.play("turn", true);
+  }
+}
+
 function movePlayer(id, x, y) {
   var player = playerMap[id];
-  if (player) {
-    var dx = x - player.x;
-    if (dx > 0) {
-      player.anims.play("right", true);
-    } else if (dx < 0) {
-      player.anims.play("left", true);
-    } else {
-      var dy = y - player.y;
-      if (dy > 0) {
-        player.anims.play("right", true);
-      } else if (dy < 0) {
-        player.anims.play("left", true);
-      } else {
-        player.anims.play("turn", true);
-      }
-    }
-    player.x = x;
-    player.y = y;
-  }
+  if (!player) { return; }
+
+  player.x = x;
+  player.y = y;
 }
 
 function preload ()
@@ -180,6 +188,14 @@ function update()
     direction.y = -1;
   } else if (cursors.down.isDown || keys.S.isDown) {
     direction.y = 1;
+  }
+
+  var player = playerMap[my_id];
+  if (player) {
+    var new_x = player.x + direction.x;
+    var new_y = player.y + direction.y;
+    animatePlayerSprite(my_id, new_x, new_y);
+    movePlayer(my_id, new_x, new_y);
   }
   client.direct(direction);
 
