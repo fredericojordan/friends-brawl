@@ -38,8 +38,8 @@ client.askNewPlayer = function() {
   my_id = createUUID();
   client.socket.emit("newplayer", {id: my_id});
 };
-client.direct = function(direction) {
-  client.socket.emit("direct", {direction: direction});
+client.move = function(player) {
+  client.socket.emit("move", {x: player.x, y: player.y});
 };
 client.dropBomb = function() {
   client.socket.emit("dropbomb");
@@ -54,7 +54,7 @@ client.socket.on("remove", function(id) {
 client.socket.on("died", function(id) {
   killPlayer(id);
 });
-client.socket.on("move", function(data) {
+client.socket.on("position", function(data) {
   animatePlayerSprite(data.id, data.x, data.y);
   movePlayer(data.id, data.x, data.y);
 });
@@ -189,12 +189,14 @@ function update()
   }
 
   var player = playerMap[my_id];
-  if (player) {
+
+  if (direction !== {x: 0, y: 0} && player) {
     var new_x = player.x + direction.x;
     var new_y = player.y + direction.y;
     animatePlayerSprite(my_id, new_x, new_y);
+    movePlayer(my_id, new_x, new_y);
+    client.move(playerMap[my_id]);
   }
-  client.direct(direction);
 
   rt.clear();
   rt.draw(layer);
