@@ -189,13 +189,14 @@ function update()
   }
 
   var player = playerMap[my_id];
-
-  if (direction !== {x: 0, y: 0} && player) {
+  if (player) {
     var new_x = player.x + direction.x;
     var new_y = player.y + direction.y;
     animatePlayerSprite(my_id, new_x, new_y);
     movePlayer(my_id, new_x, new_y);
-    client.move(playerMap[my_id]);
+    if (direction !== {x: 0, y: 0}) {
+      client.move(playerMap[my_id]);
+    }
   }
 
   rt.clear();
