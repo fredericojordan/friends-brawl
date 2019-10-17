@@ -42,10 +42,10 @@ io.on("connection", function(socket) {
             io.emit("died", socket.player.id);
         });
 
-        socket.on("direct", function(data) {
-            socket.player.x += data.direction.x;
-            socket.player.y += data.direction.y;
-            io.emit("move", socket.player);
+        socket.on("move", function(data) {
+            socket.player.x = data.x;
+            socket.player.y = data.y;
+            socket.broadcast.emit("position", socket.player);
         });
 
         socket.on("disconnect", function(){
